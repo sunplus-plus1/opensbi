@@ -43,7 +43,7 @@ static void sbi_boot_prints(struct sbi_scratch *scratch, u32 hartid)
 		   OPENSBI_VERSION_MINOR, __DATE__, __TIME__);
 #endif
 
-	sbi_printf(BANNER);
+	//sbi_printf(BANNER);
 
 	/* Platform details */
 	sbi_printf("Platform Name          : %s\n", sbi_platform_name(plat));
@@ -65,6 +65,7 @@ static void sbi_boot_prints(struct sbi_scratch *scratch, u32 hartid)
 
 void __attribute__((noreturn)) sbi_boot_freertos(void)
 {
+
 	sbi_hart_hang();
 }
 
@@ -117,7 +118,7 @@ static void __noreturn init_coldboot(struct sbi_scratch *scratch, u32 hartid)
 		#ifdef FW_PAYLOAD_TYPE
 		scratch->next_addr =  FW_TEXT_START_KERNEL;
 		#endif
-		sbi_printf("\n [OpenSBI] coldboot hartid=%d,next_addr=%lx,dtb_addr=%lx\n",hartid, scratch->next_addr,scratch->next_arg1);
+		sbi_printf("\n [OpenSBI] coldboot hartid=%d,next_addr=%lx\n",hartid, scratch->next_addr);
 		sbi_hart_switch_mode(hartid, scratch->next_arg1, scratch->next_addr,
 				     scratch->next_mode, FALSE);
 	}
@@ -167,15 +168,15 @@ static void __noreturn init_warmboot(struct sbi_scratch *scratch, u32 hartid)
 	{
 		if	(hartid == 0)
 		{
-			sbi_printf("[OpenSBI] warmboot hart 0 boot freertos !!!\n");
-			sbi_boot_freertos();
+			sbi_printf(" hart0 run freertos\n");
+			sbi_hart_switch_mode(hartid, scratch->next_arg1, 0xa0000040,PRV_M, FALSE);
 		}
 		else
 		{
 			#ifdef FW_PAYLOAD_TYPE  //used for xboot load kernel,set kernal addr as next addr;
 			scratch->next_addr =  FW_TEXT_START_KERNEL;
 			#endif
-			sbi_printf("\n [OpenSBI] warmboot hartid=%d,next_addr=%lx,dtb_addr=%lx\n",hartid, scratch->next_addr,scratch->next_arg1);
+			sbi_printf("\n [OpenSBI] warmboot hartid=%d,next_addr=%lx\n",hartid, scratch->next_addr);
 			sbi_hart_switch_mode(hartid, scratch->next_arg1,
 					     scratch->next_addr,
 					     scratch->next_mode, FALSE);
