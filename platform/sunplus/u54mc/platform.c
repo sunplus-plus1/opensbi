@@ -41,7 +41,7 @@
  * HARTs 1 to 4.
  */
 #ifndef U54MC_ENABLED_HART_MASK
-#define U54MC_ENABLED_HART_MASK	(1<< 0 |1 << 1 | 1 << 2 | 1 << 3 | 1 << 4)
+#define U54MC_ENABLED_HART_MASK	(1 << 1 | 1 << 2 | 1 << 3 | 1 << 4)
 #endif
 
 #define U54MC_HARITD_DISABLED			~(U54MC_ENABLED_HART_MASK)
@@ -57,7 +57,13 @@
 
 static int U54MC_final_init(bool cold_boot)
 {
+	void *fdt;
 
+	if (!cold_boot)
+		return 0;
+
+	fdt = sbi_scratch_thishart_arg1_ptr();
+	plic_fdt_fixup(fdt, "riscv,plic0");
 	return 0;
 }
 

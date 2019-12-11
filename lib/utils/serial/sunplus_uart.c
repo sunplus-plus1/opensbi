@@ -14,7 +14,7 @@ void sunplus_uart_putc(char ch)
 
 int sunplus_uart_getc(void)
 {
- 	if ((sp_uart->lsr & UART_REG_STATUS_RX) == 0);
+ 	if ((sp_uart->lsr & UART_REG_STATUS_RX) != 0)
 	return sp_uart->dr;
 	
   return -1;

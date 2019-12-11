@@ -9,6 +9,7 @@
 
 #include <sbi/riscv_asm.h>
 #include <sbi/riscv_atomic.h>
+#include <sbi/riscv_barrier.h>
 #include <sbi/sbi_console.h>
 #include <sbi/sbi_ecall.h>
 #include <sbi/sbi_hart.h>
@@ -108,20 +109,13 @@ static void __noreturn init_coldboot(struct sbi_scratch *scratch, u32 hartid)
 	if (!sbi_platform_has_hart_hotplug(plat))
 		sbi_hart_wake_coldboot_harts(scratch, hartid);
 	sbi_hart_mark_available(hartid);
-	if	(hartid == 0)
-	{
-		sbi_printf("[OpenSBI] coldboot hart 0 boot freertos !!!\n");
-		sbi_boot_freertos();
-	}
-	else
-	{
-		#ifdef FW_PAYLOAD_TYPE
-		scratch->next_addr =  FW_TEXT_START_KERNEL;
-		#endif
-		sbi_printf("\n [OpenSBI] coldboot hartid=%d,next_addr=%lx\n",hartid, scratch->next_addr);
-		sbi_hart_switch_mode(hartid, scratch->next_arg1, scratch->next_addr,
-				     scratch->next_mode, FALSE);
-	}
+	#ifdef FW_PAYLOAD_TYPE
+	scratch->next_addr =  FW_TEXT_START_KERNEL;
+	#endif
+	sbi_printf("\n [OpenSBI] coldboot hartid=%d,next_addr=%lx\n",hartid, scratch->next_addr);
+	sbi_hart_switch_mode(hartid, scratch->next_arg1, scratch->next_addr,
+			     scratch->next_mode, FALSE);
+	
 }
 
 static void __noreturn init_warmboot(struct sbi_scratch *scratch, u32 hartid)
@@ -166,13 +160,6 @@ static void __noreturn init_warmboot(struct sbi_scratch *scratch, u32 hartid)
 		sbi_hart_hang();
 	else
 	{
-		if	(hartid == 0)
-		{
-			sbi_printf(" hart0 run freertos\n");
-			sbi_hart_switch_mode(hartid, scratch->next_arg1, 0xa0000040,PRV_M, FALSE);
-		}
-		else
-		{
 			#ifdef FW_PAYLOAD_TYPE  //used for xboot load kernel,set kernal addr as next addr;
 			scratch->next_addr =  FW_TEXT_START_KERNEL;
 			#endif
@@ -180,12 +167,11 @@ static void __noreturn init_warmboot(struct sbi_scratch *scratch, u32 hartid)
 			sbi_hart_switch_mode(hartid, scratch->next_arg1,
 					     scratch->next_addr,
 					     scratch->next_mode, FALSE);
-		}
 	}
 }
 
 static atomic_t coldboot_lottery = ATOMIC_INITIALIZER(0);
-
+volatile int hart0_run_freertos=0;
 /**
  * Initialize OpenSBI library for current HART and jump to next
  * booting stage.
@@ -198,21 +184,26 @@ static atomic_t coldboot_lottery = ATOMIC_INITIALIZER(0);
  *
  * @param scratch pointer to sbi_scratch of current HART
  */
+
 void __noreturn sbi_init(struct sbi_scratch *scratch)
 {
 	bool coldboot			= FALSE;
 	u32 hartid			= sbi_current_hartid();
 	const struct sbi_platform *plat = sbi_platform_ptr(scratch);
-	*(char *)0x9c000900 = 'Q';
+	*(unsigned int *)0x9c000900= ('A'+hartid);
 	if (sbi_platform_hart_disabled(plat, hartid))
-		sbi_hart_hang();
-	
-	if	(hartid == 0)
 	{
-		
-		*(char *)0x9c000900 = 'V';
+		if(hartid == 0)
+		{	
+			#ifndef FW_PAYLOAD_TYPE   //xboot load kernel.run freertos here
+			do{
+				mb();
+			}while(!hart0_run_freertos);
+			#endif
+			sbi_hart_switch_mode(hartid, scratch->next_arg1, FW_TEXT_START_FREERTOS,PRV_M, FALSE);
+		}
+		sbi_hart_hang();
 	}
-//		sbi_boot_freertos();
 	
 	if (atomic_add_return(&coldboot_lottery, 1) == 1)
 		coldboot = TRUE;

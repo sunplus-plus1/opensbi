@@ -71,7 +71,7 @@ int sbi_ecall_vendor_ext_handler(struct sbi_scratch *scratch,
 					       extid, funcid, args, out_val,
 					       out_tcause, out_tval);
 }
-
+extern volatile int hart0_run_freertos;
 int sbi_ecall_base_handler(struct sbi_scratch *scratch, unsigned long extid,
 			   unsigned long funcid, unsigned long *args,
 			   unsigned long *out_val, unsigned long *out_tcause,
@@ -104,6 +104,9 @@ int sbi_ecall_base_handler(struct sbi_scratch *scratch, unsigned long extid,
 		break;
 	case SBI_EXT_BASE_PROBE_EXT:
 		ret = sbi_check_extension(scratch, args[0], out_val);
+	case SBI_EXT_BASE_SET_HART0_START:
+		hart0_run_freertos = 1;
+		break;
 	default:
 		ret = SBI_ENOTSUPP;
 	}
