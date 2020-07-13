@@ -19,7 +19,7 @@ platform-ldflags-y =
 FW_TEXT_START=0xA01D0000
 FW_PAYLOAD=y
 #next stage start addr, uboot addr is 0xA0100000, kernel addr is 0xA0200000,kernel addr need to 2M align
-FW_PAYLOAD_OFFSET=-0xD0000  
+FW_PAYLOAD_OFFSET=-0xCFFC0
 
 #for xboot boot kernel,provide the FW_PAYLOAD_TYPE=kernel parameter to select this. 
 FW_TEXT_START_KERNEL=0xA0200000
